@@ -12,6 +12,7 @@ type Matter = {
   euOther?: string;
   euComments?: string;
   cmr?: string;
+  circ?: string;
 }
 
 const appendIfNotUndefined = (a: string, b?: string) => {
@@ -77,10 +78,25 @@ const main = async () => {
     }
   });
 
+  await processFile('./treated/circ-treated.csv', (record) => {
+    const cas = record[1].trim();
+    const standard = record[2] ? record[2].trim() : '';
+    const iterator = allMatters.values();
+    while (true) {
+      const matter = iterator.next();
+      if (matter.done) {
+        break;
+      }
+      if (matter.value.cas === cas) {
+        matter.value.circ = standard;
+      }
+    }
+  });
+
   const compiledCsv = [];
-  compiledCsv.push(['Name', 'CAS', 'NCS', 'Forbidden in EU?', 'EU Type Restriction', 'EU Maximum', 'EU Other', 'EU Comments','CMR']);
+  compiledCsv.push(['Name', 'CAS', 'NCS', 'Forbidden in EU?', 'EU Type Restriction', 'EU Maximum', 'EU Other', 'EU Comments','CMR', 'CIRC']);
   allMatters.forEach((matter) => {
-    compiledCsv.push([matter.name, matter.cas, matter.ncs, matter.forbiddenInEU, matter.euTypeRestriction, matter.euMaximum, matter.euOther, matter.euComments,matter.cmr]);
+    compiledCsv.push([matter.name, matter.cas, matter.ncs, matter.forbiddenInEU, matter.euTypeRestriction, matter.euMaximum, matter.euOther, matter.euComments,matter.cmr,matter.circ]);
   });
 
   stringify(compiledCsv, {

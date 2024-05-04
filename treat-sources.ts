@@ -87,6 +87,9 @@ const main = async () => {
   await treatDirtyCSV('./sources/cmr.csv', 0, 2, ['Name', 'CAS'], (name, newCas) => {
     return [name, newCas];
   }, treatCmrCas);
+  await treatDirtyCSV('./sources/circ.csv', 1, 0, ['Name', 'CAS', 'Standard'], (name, newCas, record) => {
+    return [name, newCas, record[2]];
+  }, treatCmrCas);
 }
 
 main();
