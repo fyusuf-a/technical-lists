@@ -13,6 +13,8 @@ type Matter = {
   euComments?: string;
   cmr?: string;
   circ?: string;
+  ifraRestriction?: string;
+  ifraAmendment?: string;
 }
 
 const appendIfNotUndefined = (a: string, b?: string) => {
@@ -31,6 +33,28 @@ const main = async () => {
       matter.ncs = ncs.trim();
     }
     allMatters.add(matter);
+  });
+
+  await processFile('./treated/restricted-ifra-treated.csv', (record) => {
+    const cas = record[1].trim();
+    const [name,, type, amendment] = record;
+    const iterator = allMatters.values();
+    let found = false;
+    while (true) {
+      const matter = iterator.next();
+      if (matter.done) {
+        break;
+      }
+      if (matter.value.cas === cas) {
+        found = true;
+        matter.value.ifraRestriction = type;
+        matter.value.ifraAmendment = amendment;
+      }
+    }
+    if (!found) {
+      const newMatter: Matter = { cas, name, ifraRestriction: type, ifraAmendment: amendment };
+      allMatters.add(newMatter);
+    }
   });
 
   await processFile('./treated/forbidden-eu-treated.csv', (record) => {
@@ -94,9 +118,9 @@ const main = async () => {
   });
 
   const compiledCsv = [];
-  compiledCsv.push(['Name', 'CAS', 'NCS', 'Forbidden in EU?', 'EU Type Restriction', 'EU Maximum', 'EU Other', 'EU Comments','CMR', 'CIRC']);
+  compiledCsv.push(['Name', 'CAS', 'NCS', 'Forbidden in EU?', 'EU Type Restriction', 'EU Maximum', 'EU Other', 'EU Comments','CMR', 'CIRC', 'IFRA Restriction', 'IFRA Amendment']);
   allMatters.forEach((matter) => {
-    compiledCsv.push([matter.name, matter.cas, matter.ncs, matter.forbiddenInEU, matter.euTypeRestriction, matter.euMaximum, matter.euOther, matter.euComments,matter.cmr,matter.circ]);
+    compiledCsv.push([matter.name, matter.cas, matter.ncs, matter.forbiddenInEU, matter.euTypeRestriction, matter.euMaximum, matter.euOther, matter.euComments,matter.cmr,matter.circ, matter.ifraRestriction, matter.ifraAmendment]);
   });
 
   stringify(compiledCsv, {

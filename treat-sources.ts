@@ -25,6 +25,22 @@ export const treatCmrCas = (cas: string) => {
     .filter((cas) => cas !== '');
 }
 
+export const treatRestrictedIfraCas = (cas: string) => {
+  return cas
+    .replace(/e.g.: /, '')
+    .replace(/\(mixed isomers\)/, '')
+    .replace(/(Prohibition|Specification) of.*?: /g, '')
+    .replace(/(Restriction and Specification) of.*?: /g, '')
+    .replace('Not applicable.', '')
+    .split(' ')
+    .flatMap((cas) => cas.split('/'))
+    .flatMap((cas) => cas.split(','))
+    .flatMap((cas) => cas.split('/r'))
+    .map(removeBrackets)
+    .map((cas) => cas.replace(/\([a-zA-Z]+\)/g, ''))
+    .filter((cas) => cas !== '');
+}
+
 
 let nonEmptyName: string = '';
 let nonEmptyCas: string = '';
@@ -90,6 +106,9 @@ const main = async () => {
   await treatDirtyCSV('./sources/circ.csv', 1, 0, ['Name', 'CAS', 'Standard'], (name, newCas, record) => {
     return [name, newCas, record[2]];
   }, treatCmrCas);
+  await treatDirtyCSV('./sources/restricted-ifra.csv', 1, 0, ['Name', 'CAS', 'Type', 'Amendment'], (name, newCas, record) => {
+    return [name, newCas, record[2],record[4]];
+  }, treatRestrictedIfraCas);
 }
 
 main();
