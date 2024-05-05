@@ -1,7 +1,6 @@
 import fs from 'fs';
 import { parse } from 'csv-parse';
 import { finished } from 'stream/promises';
-import assert from 'node:assert';
 
 export async function processFile<T>(filename: string, action: (record: string[]) => void) {
   const parser = fs

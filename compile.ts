@@ -11,6 +11,7 @@ type Matter = {
   euMaximum?: string;
   euOther?: string;
   euComments?: string;
+  euCorapConcern?: string;
   cmr?: string;
   circ?: string;
   ifraRestriction?: string;
@@ -117,10 +118,52 @@ const main = async () => {
     }
   });
 
+  await processFile('./treated/corap-treated.csv', (record) => {
+    if (record[3].trim() === 'Concluded' || record[3].trim() === 'Withdrawn') {
+      return;
+    }
+    const cas = record[1].trim();
+    const iterator = allMatters.values();
+    while (true) {
+      const matter = iterator.next();
+      if (matter.done) {
+        break;
+      }
+      if (matter.value.cas === cas) {
+        matter.value.euCorapConcern = record[2];
+      }
+    }
+  });
+
   const compiledCsv = [];
-  compiledCsv.push(['Name', 'CAS', 'NCS', 'Forbidden in EU?', 'EU Type Restriction', 'EU Maximum', 'EU Other', 'EU Comments','CMR', 'CIRC', 'IFRA Restriction', 'IFRA Amendment']);
+  compiledCsv.push([
+    'Name',
+    'CAS',
+    'NCS',
+    'Forbidden in EU?',
+    'EU Type Restriction',
+    'EU Maximum',
+    'EU Other',
+    'EU Comments','CMR',
+    'CIRC',
+    'EU CoRAP',
+    'IFRA Restriction',
+    'IFRA Amendment'
+  ]);
   allMatters.forEach((matter) => {
-    compiledCsv.push([matter.name, matter.cas, matter.ncs, matter.forbiddenInEU, matter.euTypeRestriction, matter.euMaximum, matter.euOther, matter.euComments,matter.cmr,matter.circ, matter.ifraRestriction, matter.ifraAmendment]);
+    compiledCsv.push([
+      matter.name,
+      matter.cas,
+      matter.ncs,
+      matter.forbiddenInEU,
+      matter.euTypeRestriction,
+      matter.euMaximum,
+      matter.euOther,
+      matter.euComments,matter.cmr,matter.circ,
+      matter.euCorapConcern,
+      matter.ifraRestriction,
+      matter.ifraAmendment
+    ]);
   });
 
   stringify(compiledCsv, {

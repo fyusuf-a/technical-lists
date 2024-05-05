@@ -42,6 +42,9 @@ export const treatRestrictedIfraCas = (cas: string) => {
     .filter((cas) => cas !== '');
 }
 
+export const treatCorapCas = (cas: string) => {
+  return [cas.replace(/^-/, '')];
+}
 
 let nonEmptyName: string = '';
 let nonEmptyCas: string = '';
@@ -113,6 +116,9 @@ const main = async () => {
   await treatDirtyCSV('./sources/restricted-ifra.csv', 1, 0, ['Name', 'CAS', 'Type', 'Amendment'], (name, newCas, record) => {
     return [name, newCas, record[2],record[4]];
   }, treatRestrictedIfraCas);
+  await treatDirtyCSV('./sources/corap.csv', 0, 3, ['Name', 'CAS', 'Concern', 'Status'], (name, newCas, record) => {
+    return [name, newCas, record[7], record[8]];
+  }, treatCorapCas, '\t', 15);
 }
 
 main();
