@@ -2,6 +2,7 @@ import {promises as fs} from 'fs';
 import { parse } from 'csv-parse';
 import { stringify } from 'csv-stringify';
 import { checkCAS, removeBrackets } from './utils';
+import { finished } from 'stream/promises';
 
 export const treatEuCas = (cas: string) => {
   return cas
@@ -29,8 +30,8 @@ export const treatRestrictedIfraCas = (cas: string) => {
   return cas
     .replace(/e.g.: /, '')
     .replace(/\(mixed isomers\)/, '')
+    .replace(/Restriction and Specification of.*?: /g, '')
     .replace(/(Prohibition|Specification) of.*?: /g, '')
-    .replace(/(Restriction and Specification) of.*?: /g, '')
     .replace('Not applicable.', '')
     .split(' ')
     .flatMap((cas) => cas.split('/'))
@@ -49,12 +50,14 @@ const treatDirtyCSV = async (
   nameIndex: number,
   casIndex: number, headers: string[],
   orderRecord: (nonEmptyName: string, newCas: string, record: string[]) => (string[]),
-  treatCas: (cas:string) => string[]
+  treatCas: (cas:string) => string[],
+  delimiter: string = ',',
+  from_line: number = 2
 ) => {
   const content = await fs.readFile(filepath, 'utf8');
   const records = parse(content, {
-    delimiter: ',',
-    from_line: 2,
+    delimiter,
+    from_line: from_line,
     bom: true
   });
 
@@ -78,6 +81,7 @@ const treatDirtyCSV = async (
   });
 
   records.on('end', () => {
+    console.info(`${filepath} successfully processed`);
     stringify(treatedCsv, {
       delimiter: ','
     }, async(err, output) => {
@@ -87,10 +91,10 @@ const treatDirtyCSV = async (
         const filename = filepath.split('/').slice(-1)[0];
         const filenameWithoutExtension = filename.split('.').slice(0, -1).join('.');
         await fs.writeFile('./treated/' + filenameWithoutExtension + '-treated.csv', output, 'utf8');
-        console.info(`${filename} successfully processed`);
       }
     });
   });
+  await finished(records);
 }
 
 const main = async () => {
