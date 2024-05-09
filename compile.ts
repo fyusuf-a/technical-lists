@@ -11,6 +11,7 @@ type Matter = {
   euMaximum?: string;
   euOther?: string;
   euComments?: string;
+  euEndocrinianDisruptor?: string;
   euCorapConcern?: string;
   cmr?: string;
   circ?: string;
@@ -118,6 +119,20 @@ const main = async () => {
     }
   });
 
+  await processFile('./treated/endocrinian-disruptor-eu-treated.csv', (record) => {
+    const cas = record[1].trim();
+    const iterator = allMatters.values();
+    while (true) {
+      const matter = iterator.next();
+      if (matter.done) {
+        break;
+      }
+      if (matter.value.cas === cas) {
+        matter.value.euEndocrinianDisruptor = 'yes';
+      }
+    }
+  });
+
   await processFile('./treated/corap-treated.csv', (record) => {
     if (record[3].trim() === 'Concluded' || record[3].trim() === 'Withdrawn') {
       return;
@@ -146,6 +161,7 @@ const main = async () => {
     'EU Other',
     'EU Comments','CMR',
     'CIRC',
+    'EU Endocrinian disruptor',
     'EU CoRAP',
     'IFRA Restriction',
     'IFRA Amendment'
@@ -160,6 +176,7 @@ const main = async () => {
       matter.euMaximum,
       matter.euOther,
       matter.euComments,matter.cmr,matter.circ,
+      matter.euEndocrinianDisruptor,
       matter.euCorapConcern,
       matter.ifraRestriction,
       matter.ifraAmendment

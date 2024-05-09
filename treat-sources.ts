@@ -119,6 +119,9 @@ const main = async () => {
   await treatDirtyCSV('./sources/corap.csv', 0, 3, ['Name', 'CAS', 'Concern', 'Status'], (name, newCas, record) => {
     return [name, newCas, record[7], record[8]];
   }, treatCorapCas, '\t', 15);
+  await treatDirtyCSV('./sources/endocrinian-disruptor-eu.csv', 0, 3, ['Name', 'CAS'], (name, newCas) => {
+    return [name, newCas];
+  }, treatCorapCas, '\t', 20);
 }
 
 main();
