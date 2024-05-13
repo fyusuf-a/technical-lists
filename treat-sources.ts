@@ -39,6 +39,13 @@ export const treatCmrCas = (cas: string) => {
     .filter((cas) => cas !== '');
 }
 
+export const treatEdListCas = (cas: string) => {
+  return cas
+    .replace(/^-$/, '')
+    .split(',')
+    .flatMap((cas) => cas.trim());
+}
+
 export const treatRestrictedIfraCas = (cas: string) => {
   return cas
     .replace(/e.g.: /, '')
@@ -68,12 +75,12 @@ const treatDirtyCSV = async (
   orderRecord: (nonEmptyName: string, newCas: string, record: string[]) => (string[]),
   treatCas: (cas:string) => string[],
   delimiter: string = ',',
-  from_line: number = 2
+  fromLine: number = 2
 ) => {
   const content = await fs.readFile(filepath, 'utf8');
   const records = parse(content, {
     delimiter,
-    from_line: from_line,
+    from_line: fromLine,
     bom: true
   });
 
@@ -137,6 +144,14 @@ const main = async () => {
   await treatDirtyCSV('./sources/endocrinian-disruptor-eu.csv', 0, 3, ['Name', 'CAS'], (name, newCas) => {
     return [name, newCas];
   }, treatCorapCas, '\t', 20);
+  for (let i = 2; i <= 4; i++) {
+    await treatDirtyCSV(`./sources/endocrinian-disruptor-eu-${i}.csv`, 0, 1, ['Name', 'CAS'], (name, newCas) => {
+      return [name, newCas];
+    }, treatEdListCas);
+  }
+  await treatDirtyCSV('./sources/endocrinian-disruptor-deduct.csv', 3, 1, ['Name', 'CAS'], (name, newCas) => {
+    return [name, newCas];
+  }, treatCorapCas, ',');
 
   // CLP
   await treatDirtyCSV('./sources/clp.csv', 1, 3, ['Name', 'CAS', 'Classification'], (name, newCas, record) => {

@@ -12,6 +12,7 @@ type Matter = {
   euOther?: string;
   euComments?: string;
   euEndocrinianDisruptor?: string;
+  deductEndocrinianDisruptor?: string;
   euCorapConcern?: string;
   euClpClassification?: string;
   cmr?: string;
@@ -134,6 +135,37 @@ const main = async () => {
     }
   });
 
+  for (let i = 2; i <= 4; i++) {
+  await processFile(`./treated/endocrinian-disruptor-eu-${i}-treated.csv`, (record) => {
+    // console.log(record[1]);
+    const cas = record[1].trim();
+    const iterator = allMatters.values();
+    while (true) {
+      const matter = iterator.next();
+      if (matter.done) {
+        break;
+      }
+      if (matter.value.cas === cas && matter.value.euEndocrinianDisruptor !== 'yes') {
+        matter.value.euEndocrinianDisruptor = 'yes';
+      }
+    }
+  });
+  }
+
+  await processFile('./treated/endocrinian-disruptor-deduct-treated.csv', (record) => {
+    const cas = record[1].trim();
+    const iterator = allMatters.values();
+    while (true) {
+      const matter = iterator.next();
+      if (matter.done) {
+        break;
+      }
+      if (matter.value.cas === cas && matter.value.euEndocrinianDisruptor !== 'yes') {
+        matter.value.deductEndocrinianDisruptor = 'yes';
+      }
+    }
+  });
+
   await processFile('./treated/corap-treated.csv', (record) => {
     if (record[3].trim() === 'Concluded' || record[3].trim() === 'Withdrawn') {
       return;
@@ -177,6 +209,7 @@ const main = async () => {
     'EU Comments','CMR',
     'CIRC',
     'EU Endocrinian disruptor',
+    'Deduct Endocrinian disruptor',
     'EU CoRAP',
     'EU CLP Classification',
     'IFRA Restriction',
@@ -193,6 +226,7 @@ const main = async () => {
       matter.euOther,
       matter.euComments,matter.cmr,matter.circ,
       matter.euEndocrinianDisruptor,
+      matter.deductEndocrinianDisruptor,
       matter.euCorapConcern,
       matter.euClpClassification,
       matter.ifraRestriction,
