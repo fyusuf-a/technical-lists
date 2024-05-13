@@ -4,6 +4,19 @@ import { stringify } from 'csv-stringify';
 import { checkCAS, removeBrackets } from './utils';
 import { finished } from 'stream/promises';
 
+export const treatEuClpCas = (cas: string) => {
+  return cas
+    .trim()
+    .replace(/^-$/, '')
+    .split('\n').flatMap((cas) => cas.split('/'))
+    .flatMap((cas) => cas.split(';'))
+    .flatMap((cas) => cas.split('/r'))
+    .map(removeBrackets)
+    .map((cas) => cas.replace(/ /g, ''))
+    .map((cas) => cas.replace(/\([a-zA-Z]+\)/g, ''))
+    .filter((cas) => cas !== '');
+}
+
 export const treatEuCas = (cas: string) => {
   return cas
     .split('\n').flatMap((cas) => cas.split('/'))
@@ -119,9 +132,16 @@ const main = async () => {
   await treatDirtyCSV('./sources/corap.csv', 0, 3, ['Name', 'CAS', 'Concern', 'Status'], (name, newCas, record) => {
     return [name, newCas, record[7], record[8]];
   }, treatCorapCas, '\t', 15);
+
+  // ED
   await treatDirtyCSV('./sources/endocrinian-disruptor-eu.csv', 0, 3, ['Name', 'CAS'], (name, newCas) => {
     return [name, newCas];
   }, treatCorapCas, '\t', 20);
+
+  // CLP
+  await treatDirtyCSV('./sources/clp.csv', 1, 3, ['Name', 'CAS', 'Classification'], (name, newCas, record) => {
+    return [name, newCas, record[4]];
+  }, treatEuClpCas, ',', 9);
 }
 
 main();

@@ -13,6 +13,7 @@ type Matter = {
   euComments?: string;
   euEndocrinianDisruptor?: string;
   euCorapConcern?: string;
+  euClpClassification?: string;
   cmr?: string;
   circ?: string;
   ifraRestriction?: string;
@@ -150,6 +151,20 @@ const main = async () => {
     }
   });
 
+  await processFile('./treated/clp-treated.csv', (record) => {
+    const cas = record[1].trim();
+    const iterator = allMatters.values();
+    while (true) {
+      const matter = iterator.next();
+      if (matter.done) {
+        break;
+      }
+      if (matter.value.cas === cas) {
+        matter.value.euClpClassification = record[2];
+      }
+    }
+  });
+
   const compiledCsv = [];
   compiledCsv.push([
     'Name',
@@ -163,6 +178,7 @@ const main = async () => {
     'CIRC',
     'EU Endocrinian disruptor',
     'EU CoRAP',
+    'EU CLP Classification',
     'IFRA Restriction',
     'IFRA Amendment'
   ]);
@@ -178,6 +194,7 @@ const main = async () => {
       matter.euComments,matter.cmr,matter.circ,
       matter.euEndocrinianDisruptor,
       matter.euCorapConcern,
+      matter.euClpClassification,
       matter.ifraRestriction,
       matter.ifraAmendment
     ]);
