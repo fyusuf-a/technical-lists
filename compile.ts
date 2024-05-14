@@ -1,9 +1,9 @@
-import { processFile } from './utils';
+import { processFile, CAS } from './utils';
 import { promises as fs } from 'fs';
 import { stringify } from 'csv-stringify';
 
 type Matter = {
-  cas: string;
+  cas?: CAS;
   name: string;
   ncs?: string;
   forbiddenInEU?: string;
@@ -32,7 +32,7 @@ const main = async () => {
   const allMatters: Set<Matter> = new Set();
   await processFile('./sources/ifra.csv', (record) => {
     const [cas, name, ncs] = record;
-    const matter: Matter = { cas: cas ? cas.trim() : cas, name: name.trim() };
+    const matter: Matter = { cas: new CAS(cas), name: name.trim() };
     if (ncs.trim() !== '') {
       matter.ncs = ncs.trim();
     }
@@ -40,7 +40,7 @@ const main = async () => {
   });
 
   await processFile('./treated/restricted-ifra-treated.csv', (record) => {
-    const cas = record[1].trim();
+    const cas = new CAS(record[1]);
     const [name,, type, amendment] = record;
     const iterator = allMatters.values();
     let found = false;
@@ -49,7 +49,7 @@ const main = async () => {
       if (matter.done) {
         break;
       }
-      if (matter.value.cas === cas) {
+      if (matter.value.cas?.equals(cas)) {
         found = true;
         matter.value.ifraRestriction = type;
         matter.value.ifraAmendment = amendment;
@@ -62,28 +62,28 @@ const main = async () => {
   });
 
   await processFile('./treated/forbidden-eu-treated.csv', (record) => {
-    const cas = record[1].trim();
+    const cas = new CAS(record[1]);
     const iterator = allMatters.values();
     while (true) {
       const matter = iterator.next();
       if (matter.done) {
         break;
       }
-      if (matter.value.cas === cas) {
+      if (matter.value.cas?.equals(cas)) {
         matter.value.forbiddenInEU = 'yes';
       }
     }
   });
 
   await processFile('./treated/restricted-eu-treated.csv', (record) => {
-    const cas = record[1].trim();
+    const cas = new CAS(record[1]);
     const iterator = allMatters.values();
     while (true) {
       const matter = iterator.next();
       if (matter.done) {
         break;
       }
-      if (matter.value.cas === cas) {
+      if (matter.value.cas?.equals(cas)) {
         matter.value.euTypeRestriction = appendIfNotUndefined(record[2], matter.value.euTypeRestriction);
         matter.value.euMaximum = appendIfNotUndefined(record[3], matter.value.euMaximum);
         matter.value.euOther = appendIfNotUndefined(record[4], matter.value.euOther);
@@ -93,21 +93,21 @@ const main = async () => {
   });
 
   await processFile('./treated/cmr-treated.csv', (record) => {
-    const cas = record[1].trim();
+    const cas = new CAS(record[1]);
     const iterator = allMatters.values();
     while (true) {
       const matter = iterator.next();
       if (matter.done) {
         break;
       }
-      if (matter.value.cas === cas) {
+      if (matter.value.cas?.equals(cas)) {
         matter.value.cmr = 'yes';
       }
     }
   });
 
   await processFile('./treated/circ-treated.csv', (record) => {
-    const cas = record[1].trim();
+    const cas = new CAS(record[1]);
     const standard = record[2] ? record[2].trim() : '';
     const iterator = allMatters.values();
     while (true) {
@@ -115,21 +115,21 @@ const main = async () => {
       if (matter.done) {
         break;
       }
-      if (matter.value.cas === cas) {
+      if (matter.value.cas?.equals(cas)) {
         matter.value.circ = standard;
       }
     }
   });
 
   await processFile('./treated/endocrinian-disruptor-eu-treated.csv', (record) => {
-    const cas = record[1].trim();
+    const cas = new CAS(record[1]);
     const iterator = allMatters.values();
     while (true) {
       const matter = iterator.next();
       if (matter.done) {
         break;
       }
-      if (matter.value.cas === cas) {
+      if (matter.value.cas?.equals(cas)) {
         matter.value.euEndocrinianDisruptor = 'yes';
       }
     }
@@ -138,14 +138,14 @@ const main = async () => {
   for (let i = 2; i <= 4; i++) {
   await processFile(`./treated/endocrinian-disruptor-eu-${i}-treated.csv`, (record) => {
     // console.log(record[1]);
-    const cas = record[1].trim();
+    const cas = new CAS(record[1]);
     const iterator = allMatters.values();
     while (true) {
       const matter = iterator.next();
       if (matter.done) {
         break;
       }
-      if (matter.value.cas === cas && matter.value.euEndocrinianDisruptor !== 'yes') {
+      if (matter.value.cas?.equals(cas) && matter.value.euEndocrinianDisruptor !== 'yes') {
         matter.value.euEndocrinianDisruptor = 'yes';
       }
     }
@@ -153,14 +153,14 @@ const main = async () => {
   }
 
   await processFile('./treated/endocrinian-disruptor-deduct-treated.csv', (record) => {
-    const cas = record[1].trim();
+    const cas = new CAS(record[1]);
     const iterator = allMatters.values();
     while (true) {
       const matter = iterator.next();
       if (matter.done) {
         break;
       }
-      if (matter.value.cas === cas && matter.value.euEndocrinianDisruptor !== 'yes') {
+      if (matter.value.cas?.equals(cas) && matter.value.euEndocrinianDisruptor !== 'yes') {
         matter.value.deductEndocrinianDisruptor = 'yes';
       }
     }
@@ -170,28 +170,28 @@ const main = async () => {
     if (record[3].trim() === 'Concluded' || record[3].trim() === 'Withdrawn') {
       return;
     }
-    const cas = record[1].trim();
+    const cas = new CAS(record[1]);
     const iterator = allMatters.values();
     while (true) {
       const matter = iterator.next();
       if (matter.done) {
         break;
       }
-      if (matter.value.cas === cas) {
+      if (matter.value.cas?.equals(cas)) {
         matter.value.euCorapConcern = record[2];
       }
     }
   });
 
   await processFile('./treated/clp-treated.csv', (record) => {
-    const cas = record[1].trim();
+    const cas = new CAS(record[1]);
     const iterator = allMatters.values();
     while (true) {
       const matter = iterator.next();
       if (matter.done) {
         break;
       }
-      if (matter.value.cas === cas) {
+      if (matter.value.cas?.equals(cas)) {
         matter.value.euClpClassification = record[2];
       }
     }
@@ -218,7 +218,7 @@ const main = async () => {
   allMatters.forEach((matter) => {
     compiledCsv.push([
       matter.name,
-      matter.cas,
+      matter.cas ? matter.cas.toString() : '',
       matter.ncs,
       matter.forbiddenInEU,
       matter.euTypeRestriction,
