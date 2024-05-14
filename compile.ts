@@ -1,10 +1,49 @@
 import { processFile, CAS } from './utils';
 import { promises as fs } from 'fs';
 import { stringify } from 'csv-stringify';
+import { distance } from 'fastest-levenshtein';
+
+const isNameSimilar = (a: string, b: string) => {
+  let a_ = a.toLowerCase();
+  let b_ = b.toLowerCase();
+  if (a_ === b_) {
+    return true;
+  }
+  const distanceValue = distance(a_, b_);
+  if (distanceValue < 3) {
+    return true;
+  }
+  return false;
+}
+
+const isNameNew = (newName: string, matter: Matter) => {
+  if (isNameSimilar(newName, matter.name)) {
+    return false;
+  }
+  const names = matter.otherNames;
+  for (let i = 0; i < names.length; i++) {
+    if (isNameSimilar(newName, names[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+const addName = (newName: string, matter: Matter) => {
+  if (isNameNew(newName, matter)) {
+    if (newName.length < matter.name.length) {
+      matter.otherNames.push(matter.name);
+      matter.name = newName;
+    } else {
+      matter.otherNames.push(newName);
+    }
+  }
+}
 
 type Matter = {
   cas?: CAS;
   name: string;
+  otherNames: string[];
   ncs?: string;
   forbiddenInEU: boolean;
   euTypeRestriction?: string;
@@ -37,6 +76,7 @@ const main = async () => {
     const matter: Matter = {
       cas: new CAS(cas),
       name: name.trim(),
+      otherNames: [],
       forbiddenInEU: false,
       euEndocrinianDisruptor: false,
       deductEndocrinianDisruptor: false,
@@ -62,12 +102,14 @@ const main = async () => {
         found = true;
         matter.value.ifraRestriction = type;
         matter.value.ifraAmendment = amendment;
+        addName(name, matter.value);
       }
     }
     if (!found) {
       const newMatter: Matter = {
         cas,
         name,
+        otherNames: [],
         ifraRestriction: type,
         ifraAmendment: amendment,
         forbiddenInEU: false,
@@ -111,8 +153,7 @@ const main = async () => {
     }
   });
 
-  await processFile('./treated/cmr-treated.csv', (record) => {
-    const cas = new CAS(record[1]);
+  await processFile('./treated/cmr-treated.csv', (record) => { const cas = new CAS(record[1]);
     const iterator = allMatters.values();
     while (true) {
       const matter = iterator.next();
@@ -127,6 +168,7 @@ const main = async () => {
 
   await processFile('./treated/circ-treated.csv', (record) => {
     const cas = new CAS(record[1]);
+    const name = record[0].trim();
     const standard = record[2] ? record[2].trim() : '';
     const iterator = allMatters.values();
     while (true) {
@@ -134,8 +176,9 @@ const main = async () => {
       if (matter.done) {
         break;
       }
-      if (matter.value.cas?.equals(cas)) {
+      if (matter.value.cas?.equals(cas) && standard !== '') {
         matter.value.circ = standard;
+        addName(name, matter.value);
       }
     }
   });
@@ -156,7 +199,6 @@ const main = async () => {
 
   for (let i = 2; i <= 4; i++) {
   await processFile(`./treated/endocrinian-disruptor-eu-${i}-treated.csv`, (record) => {
-    // console.log(record[1]);
     const cas = new CAS(record[1]);
     const iterator = allMatters.values();
     while (true) {
@@ -196,6 +238,9 @@ const main = async () => {
       if (matter.done) {
         break;
       }
+      if (record[3]?.match(/Concluded|Withdrawn/) !== null) {
+        continue;
+      }
       if (matter.value.cas?.equals(cas)) {
         matter.value.euCorapConcern = record[2];
       }
@@ -204,6 +249,7 @@ const main = async () => {
 
   await processFile('./treated/clp-treated.csv', (record) => {
     const cas = new CAS(record[1]);
+    const name = record[0].trim();
     const iterator = allMatters.values();
     while (true) {
       const matter = iterator.next();
@@ -212,49 +258,88 @@ const main = async () => {
       }
       if (matter.value.cas?.equals(cas)) {
         matter.value.euClpClassification = record[2];
+        addName(name, matter.value);
       }
     }
   });
 
   const compiledCsv = [];
+  // ALL MATTERS
+  // compiledCsv.push([
+  //   'Name',
+  //   'CAS',
+  //   'NCS',
+  //   'Forbidden in EU?',
+  //   'EU Type Restriction',
+  //   'EU Maximum',
+  //   'EU Other',
+  //   'EU Comments','CMR',
+  //   'CIRC',
+  //   'EU Endocrinian disruptor',
+  //   'Deduct Endocrinian disruptor',
+  //   'EU CoRAP',
+  //   'EU CLP Classification',
+  //   'IFRA Restriction',
+  //   'IFRA Amendment'
+  // ]);
+  // allMatters.forEach((matter) => {
+  //   compiledCsv.push([
+  //     matter.name,
+  //     matter.cas ? matter.cas.toString() : '',
+  //     matter.ncs,
+  //     matter.forbiddenInEU ? 'yes' : '',
+  //     matter.euTypeRestriction,
+  //     matter.euMaximum,
+  //     matter.euOther,
+  //     matter.euComments,
+  //     matter.cmr ? 'yes' : '',
+  //     matter.circ,
+  //     matter.euEndocrinianDisruptor ? 'yes' : '',
+  //     matter.deductEndocrinianDisruptor ? 'yes' : '',
+  //     matter.euCorapConcern,
+  //     matter.euClpClassification,
+  //     matter.ifraRestriction,
+  //     matter.ifraAmendment
+  //   ]);
+  // });
+
   compiledCsv.push([
     'Name',
+    'Other names',
     'CAS',
     'NCS',
-    'Forbidden in EU?',
-    'EU Type Restriction',
-    'EU Maximum',
-    'EU Other',
-    'EU Comments','CMR',
-    'CIRC',
-    'EU Endocrinian disruptor',
-    'Deduct Endocrinian disruptor',
-    'EU CoRAP',
-    'EU CLP Classification',
-    'IFRA Restriction',
-    'IFRA Amendment'
+    'CMR',
+    'PE',
   ]);
   allMatters.forEach((matter) => {
-    compiledCsv.push([
-      matter.name,
-      matter.cas ? matter.cas.toString() : '',
-      matter.ncs,
-      matter.forbiddenInEU ? 'yes' : '',
-      matter.euTypeRestriction,
-      matter.euMaximum,
-      matter.euOther,
-      matter.euComments,
-      matter.cmr ? 'yes' : '',
-      matter.circ,
-      matter.euEndocrinianDisruptor ? 'yes' : '',
-      matter.deductEndocrinianDisruptor ? 'yes' : '',
-      matter.euCorapConcern,
-      matter.euClpClassification,
-      matter.ifraRestriction,
-      matter.ifraAmendment
-    ]);
-  });
+    const isCMR =
+      (matter.euClpClassification && matter.euClpClassification?.match(/carcinogenic|mutagenic|reprotoxic|CMR/i) !== null)
+      || (matter.euCorapConcern && matter.euCorapConcern?.match(/carcinogenic|mutagnic|reprotoxic|CMR/i) !== null)
+      || (matter.circ && matter.circ?.match(/1|2A|2B|3/) !== null)
+      || matter.cmr;
 
+    const isPE = matter.euEndocrinianDisruptor
+     || matter.deductEndocrinianDisruptor
+     || (matter.euCorapConcern && matter.euCorapConcern?.match(/endocrinian/i) !== null);
+
+    if (!matter.forbiddenInEU
+        && (!matter.euTypeRestriction || matter.euTypeRestriction.match("Autres produits|Produits sans rin(c|ç)age|Tous (les )?produits cosmétiques|Compositions parfumantes|Parfums fins") !== null)
+        && matter.euTypeRestriction !== 'P'
+        && matter?.ifraRestriction !== 'P'
+        && !matter.cas?.equals(new CAS('64-17-5')) // remove ethanol
+
+        && (isCMR|| isPE)
+    ) {
+      compiledCsv.push([
+        matter.name,
+        matter.otherNames.join(' / '),
+        matter.cas ? matter.cas.toString() : '',
+        matter.ncs,
+        isCMR ? 'yes' : '',
+        isPE ? 'yes' : '',
+      ]);
+    }
+  });
   stringify(compiledCsv, {
     delimiter: ','
   }, (err, output) => {

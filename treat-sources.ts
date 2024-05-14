@@ -131,6 +131,9 @@ const main = async () => {
     return [name, newCas];
   }, treatCmrCas);
   await treatDirtyCSV('./sources/circ.csv', 1, 0, ['Name', 'CAS', 'Standard'], (name, newCas, record) => {
+    if (!['1', '2A', '2B', '3', ''].includes(record[2])) {
+      console.error(`Invalid CIRC standard ${record[2]} for ${name}`);
+    }
     return [name, newCas, record[2]];
   }, treatCmrCas);
   await treatDirtyCSV('./sources/restricted-ifra.csv', 1, 0, ['Name', 'CAS', 'Type', 'Amendment'], (name, newCas, record) => {
