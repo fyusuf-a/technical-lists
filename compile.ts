@@ -6,16 +6,16 @@ type Matter = {
   cas?: CAS;
   name: string;
   ncs?: string;
-  forbiddenInEU?: string;
+  forbiddenInEU: boolean;
   euTypeRestriction?: string;
   euMaximum?: string;
   euOther?: string;
   euComments?: string;
-  euEndocrinianDisruptor?: string;
-  deductEndocrinianDisruptor?: string;
+  euEndocrinianDisruptor: boolean;
+  deductEndocrinianDisruptor: boolean;
   euCorapConcern?: string;
   euClpClassification?: string;
-  cmr?: string;
+  cmr: boolean;
   circ?: string;
   ifraRestriction?: string;
   ifraAmendment?: string;
@@ -30,9 +30,18 @@ const appendIfNotUndefined = (a: string, b?: string) => {
 
 const main = async () => {
   const allMatters: Set<Matter> = new Set();
+
+  // CREATE LIST
   await processFile('./sources/ifra.csv', (record) => {
     const [cas, name, ncs] = record;
-    const matter: Matter = { cas: new CAS(cas), name: name.trim() };
+    const matter: Matter = {
+      cas: new CAS(cas),
+      name: name.trim(),
+      forbiddenInEU: false,
+      euEndocrinianDisruptor: false,
+      deductEndocrinianDisruptor: false,
+      cmr: false,
+    };
     if (ncs.trim() !== '') {
       matter.ncs = ncs.trim();
     }
@@ -56,11 +65,21 @@ const main = async () => {
       }
     }
     if (!found) {
-      const newMatter: Matter = { cas, name, ifraRestriction: type, ifraAmendment: amendment };
+      const newMatter: Matter = {
+        cas,
+        name,
+        ifraRestriction: type,
+        ifraAmendment: amendment,
+        forbiddenInEU: false,
+        euEndocrinianDisruptor: false,
+        deductEndocrinianDisruptor: false,
+        cmr: false,
+      };
       allMatters.add(newMatter);
     }
   });
 
+  // FORBIDDEN IN EU
   await processFile('./treated/forbidden-eu-treated.csv', (record) => {
     const cas = new CAS(record[1]);
     const iterator = allMatters.values();
@@ -70,7 +89,7 @@ const main = async () => {
         break;
       }
       if (matter.value.cas?.equals(cas)) {
-        matter.value.forbiddenInEU = 'yes';
+        matter.value.forbiddenInEU = true;
       }
     }
   });
@@ -101,7 +120,7 @@ const main = async () => {
         break;
       }
       if (matter.value.cas?.equals(cas)) {
-        matter.value.cmr = 'yes';
+        matter.value.cmr = true;
       }
     }
   });
@@ -130,7 +149,7 @@ const main = async () => {
         break;
       }
       if (matter.value.cas?.equals(cas)) {
-        matter.value.euEndocrinianDisruptor = 'yes';
+        matter.value.euEndocrinianDisruptor = true;
       }
     }
   });
@@ -145,8 +164,8 @@ const main = async () => {
       if (matter.done) {
         break;
       }
-      if (matter.value.cas?.equals(cas) && matter.value.euEndocrinianDisruptor !== 'yes') {
-        matter.value.euEndocrinianDisruptor = 'yes';
+      if (matter.value.cas?.equals(cas)) {
+        matter.value.euEndocrinianDisruptor = true;
       }
     }
   });
@@ -160,8 +179,8 @@ const main = async () => {
       if (matter.done) {
         break;
       }
-      if (matter.value.cas?.equals(cas) && matter.value.euEndocrinianDisruptor !== 'yes') {
-        matter.value.deductEndocrinianDisruptor = 'yes';
+      if (matter.value.cas?.equals(cas)) {
+        matter.value.deductEndocrinianDisruptor = true;
       }
     }
   });
@@ -220,13 +239,15 @@ const main = async () => {
       matter.name,
       matter.cas ? matter.cas.toString() : '',
       matter.ncs,
-      matter.forbiddenInEU,
+      matter.forbiddenInEU ? 'yes' : '',
       matter.euTypeRestriction,
       matter.euMaximum,
       matter.euOther,
-      matter.euComments,matter.cmr,matter.circ,
-      matter.euEndocrinianDisruptor,
-      matter.deductEndocrinianDisruptor,
+      matter.euComments,
+      matter.cmr ? 'yes' : '',
+      matter.circ,
+      matter.euEndocrinianDisruptor ? 'yes' : '',
+      matter.deductEndocrinianDisruptor ? 'yes' : '',
       matter.euCorapConcern,
       matter.euClpClassification,
       matter.ifraRestriction,
