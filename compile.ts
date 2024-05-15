@@ -231,7 +231,7 @@ const main = async () => {
   });
 
   // REACH
-  await processFile('./treated/corap-treated.csv', (record) => {
+  await processFile('./treated/reach-corap-treated.csv', (record) => {
     if (record[3].trim() === 'Concluded' || record[3].trim() === 'Withdrawn') {
       return;
     }
