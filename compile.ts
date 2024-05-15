@@ -54,6 +54,7 @@ type Matter = {
   deductEndocrinianDisruptor: boolean;
   euCorapConcern?: string;
   euClpClassification?: string;
+  reachIntentionConcern: string;
   cmr: boolean;
   circ?: string;
   ifraRestriction?: string;
@@ -81,6 +82,7 @@ const main = async () => {
       euEndocrinianDisruptor: false,
       deductEndocrinianDisruptor: false,
       cmr: false,
+      reachIntentionConcern: '',
     };
     if (ncs.trim() !== '') {
       matter.ncs = ncs.trim();
@@ -116,6 +118,7 @@ const main = async () => {
         euEndocrinianDisruptor: false,
         deductEndocrinianDisruptor: false,
         cmr: false,
+        reachIntentionConcern: '',
       };
       allMatters.add(newMatter);
     }
@@ -227,6 +230,7 @@ const main = async () => {
     }
   });
 
+  // REACH
   await processFile('./treated/corap-treated.csv', (record) => {
     if (record[3].trim() === 'Concluded' || record[3].trim() === 'Withdrawn') {
       return;
@@ -259,6 +263,23 @@ const main = async () => {
       if (matter.value.cas?.equals(cas)) {
         matter.value.euClpClassification = record[2];
         addName(name, matter.value);
+      }
+    }
+  });
+
+  await processFile('./treated/reach-svhc-intentions-until-outcome-treated.csv', (record) => {
+    if (record[3].match(/not identified|withdrawn/i) !== null) {
+      return;
+    }
+    const cas = new CAS(record[1]);
+    const iterator = allMatters.values();
+    while (true) {
+      const matter = iterator.next();
+      if (matter.done) {
+        break;
+      }
+      if (matter.value.cas?.equals(cas)) {
+          matter.value.reachIntentionConcern = record[2];
       }
     }
   });
@@ -311,16 +332,20 @@ const main = async () => {
     'CMR',
     'PE',
   ]);
+
+  const CMR_REGEX = /carcinogenic|mutagenic|reprot|reprod|CMR/i;
+
   allMatters.forEach((matter) => {
     const isCMR =
-      (matter.euClpClassification && matter.euClpClassification?.match(/carcinogenic|mutagenic|reprotoxic|CMR/i) !== null)
-      || (matter.euCorapConcern && matter.euCorapConcern?.match(/carcinogenic|mutagnic|reprotoxic|CMR/i) !== null)
+      (matter.euClpClassification && matter.euClpClassification?.match(CMR_REGEX) !== null)
+      || (matter.euCorapConcern && matter.euCorapConcern?.match(CMR_REGEX) !== null)
       || (matter.circ && matter.circ?.match(/1|2A|2B|3/) !== null)
       || matter.cmr;
 
     const isPE = matter.euEndocrinianDisruptor
      || matter.deductEndocrinianDisruptor
-     || (matter.euCorapConcern && matter.euCorapConcern?.match(/endocrinian/i) !== null);
+     || (matter.euCorapConcern && matter.euCorapConcern?.match(/endocrin/i) !== null)
+     || matter.reachIntentionConcern.match(/endocrin/i) !== null;
 
     if (!matter.forbiddenInEU
         && (!matter.euTypeRestriction || matter.euTypeRestriction.match("Autres produits|Produits sans rin(c|ç)age|Tous (les )?produits cosmétiques|Compositions parfumantes|Parfums fins") !== null)

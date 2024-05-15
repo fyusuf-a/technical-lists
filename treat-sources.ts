@@ -139,9 +139,14 @@ const main = async () => {
   await treatDirtyCSV('./sources/restricted-ifra.csv', 1, 0, ['Name', 'CAS', 'Type', 'Amendment'], (name, newCas, record) => {
     return [name, newCas, record[2],record[4]];
   }, treatRestrictedIfraCas);
+
+  // REACH
   await treatDirtyCSV('./sources/corap.csv', 0, 3, ['Name', 'CAS', 'Concern', 'Status'], (name, newCas, record) => {
     return [name, newCas, record[7], record[8]];
   }, treatCorapCas, '\t', 15);
+  await treatDirtyCSV('./sources/reach-svhc-intentions-until-outcome.csv', 0, 3, ['Name', 'CAS', 'Concern', 'Status'], (name, newCas, record) => {
+    return [name, newCas, record[13], record[6]];
+  }, treatCorapCas, '\t', 27);
 
   // ED
   await treatDirtyCSV('./sources/endocrinian-disruptor-eu.csv', 0, 3, ['Name', 'CAS'], (name, newCas) => {
