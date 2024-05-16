@@ -1,6 +1,45 @@
 import fs from 'fs';
 import { parse } from 'csv-parse';
 import { finished } from 'stream/promises';
+import { distance } from 'fastest-levenshtein';
+
+export type Matter = {
+  cas?: CAS;
+  name: string;
+  otherNames: string[];
+  ncs?: string;
+  forbiddenInEU: boolean;
+  euTypeRestriction?: string;
+  euMaximum?: string;
+  euOther?: string;
+  euComments?: string;
+  euEndocrinianDisruptor: boolean;
+  deductEndocrinianDisruptor: boolean;
+  euCorapConcern?: string;
+  euClpClassification?: string;
+  reachIntentionConcern: string;
+  cmr: boolean;
+  circ?: string;
+  ifraRestriction?: string;
+  ifraAmendment?: string;
+}
+
+const CMR_REGEX = /carc|muta|repr|lact|CMR/i;
+export const isCMR = (matter: Matter) => {
+    return (
+        (matter.euClpClassification && matter.euClpClassification?.match(CMR_REGEX) !== null)
+        || (matter.euCorapConcern && matter.euCorapConcern?.match(CMR_REGEX) !== null)
+        || matter.reachIntentionConcern.match(CMR_REGEX) !== null
+        || (matter.circ && matter.circ?.match(/1|2A|2B|3/) !== null)
+        || matter.cmr
+    );
+  }
+export const isPE = (matter: Matter) => {
+  return matter.euEndocrinianDisruptor
+ || matter.deductEndocrinianDisruptor
+ || (matter.euCorapConcern && matter.euCorapConcern?.match(/endocrin/i) !== null)
+ || matter.reachIntentionConcern.match(/endocrin/i) !== null;
+}
 
 export class CAS {
   parts: [number, number,number];
@@ -62,4 +101,54 @@ export const checkCAS = (cas: string) => {
 
 export const removeBrackets = (name: string) => {
   return name.replace(/-?\[\d+\]/g, '');
+}
+
+export const shouldBeIncluded = (matter: Matter) => {
+  return !matter.forbiddenInEU
+        && (!matter.euTypeRestriction || matter.euTypeRestriction.match("Autres produits|Produits sans rin(c|ç)age|Tous (les )?produits cosmétiques|Compositions parfumantes|Parfums fins") !== null)
+        && matter?.ifraRestriction !== 'P'
+        && !matter.cas?.equals(new CAS('64-17-5')); // remove ethanol
+}
+const isNameSimilar = (a: string, b: string) => {
+  let a_ = a.toLowerCase();
+  let b_ = b.toLowerCase();
+  if (a_ === b_) {
+    return true;
+  }
+  const distanceValue = distance(a_, b_);
+  if (distanceValue < 3) {
+    return true;
+  }
+  return false;
+}
+
+const isNameNew = (newName: string, matter: Matter) => {
+  if (isNameSimilar(newName, matter.name)) {
+    return false;
+  }
+  const names = matter.otherNames;
+  for (let i = 0; i < names.length; i++) {
+    if (isNameSimilar(newName, names[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export const addName = (newName: string, matter: Matter) => {
+  if (isNameNew(newName, matter)) {
+    if (newName.length < matter.name.length) {
+      matter.otherNames.push(matter.name);
+      matter.name = newName;
+    } else {
+      matter.otherNames.push(newName);
+    }
+  }
+}
+
+export const appendIfNotUndefined = (a: string, b?: string) => {
+  if (b) {
+    return `${b} / ${a}`;
+  }
+  return a;
 }
