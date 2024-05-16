@@ -8,12 +8,15 @@ import {
   isCMR,
   appendIfNotUndefined
 } from './utils';
+import { CustomSet } from './set';
 import { promises as fs } from 'fs';
 import { stringify } from 'csv-stringify';
 
+const allMatters: CustomSet<Matter> = new CustomSet((a: Matter, b: Matter) => {
+  return a.cas?.equals(b.cas) ?? false;
+});
 
 const main = async () => {
-  const allMatters: Set<Matter> = new Set();
 
   // CREATE LIST
   await processFile('./sources/ifra.csv', (record) => {
@@ -25,8 +28,8 @@ const main = async () => {
       forbiddenInEU: false,
       euEndocrinianDisruptor: false,
       deductEndocrinianDisruptor: false,
-      cmr: false,
       reachIntentionConcern: '',
+      ifraAutoclassified: false,
     };
     if (ncs.trim() !== '') {
       matter.ncs = ncs.trim();
@@ -45,20 +48,6 @@ const main = async () => {
       }
       if (matter.value.cas?.equals(cas)) {
         matter.value.forbiddenInEU = true;
-      }
-    }
-  });
-
-  await processFile('./treated/eu-annex-iii-treated.csv', (record) => {
-    const cas = new CAS(record[1]);
-    const iterator = allMatters.values();
-    while (true) {
-      const matter = iterator.next();
-      if (matter.done) {
-        break;
-      }
-      if (matter.value.cas?.equals(cas)) {
-        matter.value.euTypeRestriction = appendIfNotUndefined(record[2], matter.value.euTypeRestriction);
       }
     }
   });
@@ -124,8 +113,8 @@ const main = async () => {
         forbiddenInEU: false,
         euEndocrinianDisruptor: false,
         deductEndocrinianDisruptor: false,
-        cmr: false,
         reachIntentionConcern: '',
+        ifraAutoclassified: false,
       };
       allMatters.add(newMatter);
     }
@@ -214,6 +203,21 @@ const main = async () => {
       }
       if (matter.value.cas?.equals(cas)) {
           matter.value.reachIntentionConcern = record[2];
+      }
+    }
+  });
+
+  // Autoclassified
+  await processFile('./treated/afdm-treated.csv', (record) => {
+    const cas = new CAS(record[1]);
+    const iterator = allMatters.values();
+    while (true) {
+      const matter = iterator.next();
+      if (matter.done) {
+        break;
+      }
+      if (matter.value.cas?.equals(cas)) {
+        matter.value.ifraAutoclassified = true;
       }
     }
   });

@@ -5,6 +5,7 @@ import { distance } from 'fastest-levenshtein';
 
 export type Matter = {
   cas?: CAS;
+  ec?: string;
   name: string;
   otherNames: string[];
   ncs?: string;
@@ -18,10 +19,10 @@ export type Matter = {
   euCorapConcern?: string;
   euClpClassification?: string;
   reachIntentionConcern: string;
-  cmr: boolean;
   circ?: string;
   ifraRestriction?: string;
   ifraAmendment?: string;
+  ifraAutoclassified: boolean;
 }
 
 const CMR_REGEX = /carc|muta|repr|lact|CMR/i;
@@ -31,7 +32,7 @@ export const isCMR = (matter: Matter) => {
         || (matter.euCorapConcern && matter.euCorapConcern?.match(CMR_REGEX) !== null)
         || matter.reachIntentionConcern.match(CMR_REGEX) !== null
         || (matter.circ && matter.circ?.match(/1|2A|2B|3/) !== null)
-        || matter.cmr
+        || matter.ifraAutoclassified
     );
   }
 export const isPE = (matter: Matter) => {
@@ -60,7 +61,10 @@ export class CAS {
     return this.parts[0].toString() + '-' + this.parts[1].toString().padStart(2, '0') + '-' + this.parts[2].toString();
   }
 
-  equals(cas: CAS) {
+  equals(cas: CAS | undefined): boolean {
+    if (!cas) {
+      return false;
+    }
     return this.parts[0] === cas.parts[0] && this.parts[1] === cas.parts[1];
   }
 }
@@ -95,6 +99,14 @@ export const checkCAS = (cas: string) => {
   }
   if (sum % 10 !== checkDigit) {
     return `Check digit of CAS number ${cas} is invalid`;
+  }
+  return true;
+}
+
+const ecPattern = /^\d{3}-\d{3}-\d{1}$/;
+export const checkEC = (ec: string) => {
+  if (!ecPattern.test(ec)) {
+    return `EC number "${ec}" is invalid`;
   }
   return true;
 }
