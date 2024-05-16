@@ -181,6 +181,15 @@ const main = async () => {
     isEcEmpty: isEchaCasEmpty,
     addToUnidentifiedSubstances: false
   });
+  await treatDirtyCSV('./sources/eu-annex-iii.csv', 0, 2, ['Name', 'CAS', 'EC'], (name, newCas, _, newEc) => {
+    return [name, newCas, newEc];
+  }, treatEchaCas, isEchaCasEmpty, {
+    delimiter: '\t',
+    fromLine: 12,
+    ecIndex: 1,
+    isEcEmpty: isEchaCasEmpty,
+    addToUnidentifiedSubstances: false
+  });
 
   // CLP
   await treatDirtyCSV('./sources/clp.csv', 1, 3, ['Name', 'CAS', 'Classification', 'EC'], (name, newCas, record, newEc) => {

@@ -13,28 +13,66 @@ import { promises as fs } from 'fs';
 import { stringify } from 'csv-stringify';
 
 const allMatters: CustomSet<Matter> = new CustomSet((a: Matter, b: Matter) => {
-  return a.cas?.equals(b.cas) ?? false;
+  return a.equals(b);
 });
 
 const main = async () => {
 
-  // CREATE LIST
+  // CREATE LIST OF SUBSTANCES
   await processFile('./sources/ifra.csv', (record) => {
     const [cas, name, ncs] = record;
-    const matter: Matter = {
-      cas: new CAS(cas),
-      name: name.trim(),
-      otherNames: [],
-      forbiddenInEU: false,
-      euEndocrinianDisruptor: false,
-      deductEndocrinianDisruptor: false,
-      reachIntentionConcern: '',
-      ifraAutoclassified: false,
-    };
+    const matter = new Matter(name);
+    matter.cas = new CAS(cas);
     if (ncs.trim() !== '') {
       matter.ncs = ncs.trim();
     }
     allMatters.add(matter);
+  });
+
+  await processFile('./treated/restricted-ifra-treated.csv', (record) => {
+    const [name, cas, type, amendment] = record;
+    const newMatter: Matter = new Matter(name);
+    newMatter.cas = new CAS(cas);
+    newMatter.ifraRestriction = type;
+    newMatter.ifraAmendment = amendment;
+    const iterator = allMatters.values();
+    let found = false;
+    while (true) {
+      const matter = iterator.next();
+      if (matter.done) {
+        break;
+      }
+      if (matter.value.equals(newMatter)) {
+        found = true;
+        matter.value.merge(newMatter);
+      }
+    }
+    if (!found) {
+      allMatters.add(newMatter);
+    }
+  });
+
+  await processFile('./treated/eu-annex-iii-treated.csv', (record) => {
+    const [name, cas, type, amendment] = record;
+    const newMatter: Matter = new Matter(name);
+    newMatter.cas = new CAS(cas);
+    newMatter.ifraRestriction = type;
+    newMatter.ifraAmendment = amendment;
+    const iterator = allMatters.values();
+    let found = false;
+    while (true) {
+      const matter = iterator.next();
+      if (matter.done) {
+        break;
+      }
+      if (matter.value.equals(newMatter)) {
+        found = true;
+        matter.value.merge(newMatter);
+      }
+    }
+    if (!found) {
+      allMatters.add(newMatter);
+    }
   });
 
   // COSMETIC REGULATION
@@ -85,41 +123,6 @@ const main = async () => {
       }
     }
   });
-
-  await processFile('./treated/restricted-ifra-treated.csv', (record) => {
-    const cas = new CAS(record[1]);
-    const [name,, type, amendment] = record;
-    const iterator = allMatters.values();
-    let found = false;
-    while (true) {
-      const matter = iterator.next();
-      if (matter.done) {
-        break;
-      }
-      if (matter.value.cas?.equals(cas)) {
-        found = true;
-        matter.value.ifraRestriction = type;
-        matter.value.ifraAmendment = amendment;
-        addName(name, matter.value);
-      }
-    }
-    if (!found) {
-      const newMatter: Matter = {
-        cas,
-        name,
-        otherNames: [],
-        ifraRestriction: type,
-        ifraAmendment: amendment,
-        forbiddenInEU: false,
-        euEndocrinianDisruptor: false,
-        deductEndocrinianDisruptor: false,
-        reachIntentionConcern: '',
-        ifraAutoclassified: false,
-      };
-      allMatters.add(newMatter);
-    }
-  });
-
 
   await processFile('./treated/endocrinian-disruptor-eu-treated.csv', (record) => {
     if (record[2].match(/development|inconclusive|ED HH|postponed/i) === null) {
