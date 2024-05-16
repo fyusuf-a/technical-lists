@@ -47,12 +47,12 @@ const main = async () => {
         matter.value.merge(newMatter);
       }
     }
-    if (!found) {
-      allMatters.add(newMatter);
-    }
+    // if (!found) {
+    //   allMatters.add(newMatter);
+    // }
   });
 
-  await processFile('./treated/eu-annex-iii-treated.csv', (record) => {
+  /* await processFile('./treated/eu-annex-iii-treated.csv', (record) => {
     const [name, cas, type, amendment] = record;
     const newMatter: Matter = new Matter(name);
     newMatter.cas = new CAS(cas);
@@ -73,7 +73,7 @@ const main = async () => {
     if (!found) {
       allMatters.add(newMatter);
     }
-  });
+  }); */
 
   // COSMETIC REGULATION
   await processFile('./treated/eu-annex-ii-treated.csv', (record) => {
