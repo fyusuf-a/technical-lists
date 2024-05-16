@@ -35,7 +35,7 @@ const main = async () => {
   });
 
   // COSMETIC REGULATION
-  await processFile('./treated/forbidden-eu-treated.csv', (record) => {
+  await processFile('./treated/eu-annex-ii-treated.csv', (record) => {
     const cas = new CAS(record[1]);
     const iterator = allMatters.values();
     while (true) {
@@ -49,7 +49,7 @@ const main = async () => {
     }
   });
 
-  await processFile('./treated/restricted-eu-treated.csv', (record) => {
+  await processFile('./treated/eu-annex-iii-treated.csv', (record) => {
     const cas = new CAS(record[1]);
     const iterator = allMatters.values();
     while (true) {
@@ -59,9 +59,6 @@ const main = async () => {
       }
       if (matter.value.cas?.equals(cas)) {
         matter.value.euTypeRestriction = appendIfNotUndefined(record[2], matter.value.euTypeRestriction);
-        matter.value.euMaximum = appendIfNotUndefined(record[3], matter.value.euMaximum);
-        matter.value.euOther = appendIfNotUndefined(record[4], matter.value.euOther);
-        matter.value.euComments = appendIfNotUndefined(record[5], matter.value.euComments);
       }
     }
   });

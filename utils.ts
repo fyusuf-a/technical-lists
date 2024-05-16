@@ -105,7 +105,6 @@ export const removeBrackets = (name: string) => {
 
 export const shouldBeIncluded = (matter: Matter) => {
   return !matter.forbiddenInEU
-        && (!matter.euTypeRestriction || matter.euTypeRestriction.match("Autres produits|Produits sans rin(c|ç)age|Tous (les )?produits cosmétiques|Compositions parfumantes|Parfums fins") !== null)
         && matter?.ifraRestriction !== 'P'
         && !matter.cas?.equals(new CAS('64-17-5')); // remove ethanol
 }

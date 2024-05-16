@@ -17,16 +17,6 @@ const treatEchaCas = (cas: string) => {
     .filter((cas) => cas !== '');
 }
 
-export const treatEuCas = (cas: string) => {
-  return cas
-    .split('\n').flatMap((cas) => cas.split('/'))
-    .flatMap((cas) => cas.split('/r'))
-    .map(removeBrackets)
-    .map((cas) => cas.replace(/ /g, ''))
-    .map((cas) => cas.replace(/\([a-zA-Z]+\)/g, ''))
-    .filter((cas) => cas !== '');
-}
-
 const treatCircCas = (cas: string) => {
   return cas
     .split('\n')
@@ -124,12 +114,12 @@ const treatDirtyCSV = async (
 }
 
 const main = async () => {
-  await treatDirtyCSV('./sources/forbidden-eu.csv', 0, 1, ['Name', 'CAS'], (name, newCas) => {
+  await treatDirtyCSV('./sources/eu-annex-ii.csv', 0, 2, ['Name', 'CAS'], (name, newCas) => {
     return [name, newCas];
-  }, treatEuCas);
-  await treatDirtyCSV('./sources/restricted-eu.csv', 0, 2, ['Name', 'CAS', 'Type', 'Maximum', 'Other', 'Dangers'], (name, newCas, record) => {
-    return [name, newCas, record[4], record[5], record[6], record[7]];
-  }, treatEuCas);
+  }, treatEchaCas, '\t', 12);
+  await treatDirtyCSV('./sources/eu-annex-iii.csv', 0, 2, ['Name', 'CAS', 'Type'], (name, newCas, record) => {
+    return [name, newCas, record[7]];
+  }, treatEchaCas, '\t', 12);
 
   // CLP
   await treatDirtyCSV('./sources/clp.csv', 1, 3, ['Name', 'CAS', 'Classification'], (name, newCas, record) => {
