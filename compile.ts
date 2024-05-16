@@ -223,7 +223,6 @@ const main = async () => {
     'Name',
     'Other names',
     'CAS',
-    'NCS',
     'CMR',
     'PE',
   ]);
@@ -238,7 +237,6 @@ const main = async () => {
         matter.name,
         matter.otherNames.join(' / '),
         matter.cas ? matter.cas.toString() : '',
-        matter.ncs,
         matterIsCMR ? 'yes' : '',
         matterIsPE ? 'yes' : '',
       ]);

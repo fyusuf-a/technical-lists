@@ -106,7 +106,8 @@ export const removeBrackets = (name: string) => {
 export const shouldBeIncluded = (matter: Matter) => {
   return !matter.forbiddenInEU
         && matter?.ifraRestriction !== 'P'
-        && !matter.cas?.equals(new CAS('64-17-5')); // remove ethanol
+        && !matter.cas?.equals(new CAS('64-17-5')) // remove ethanol
+        && !matter.ncs;
 }
 const isNameSimilar = (a: string, b: string) => {
   let a_ = a.toLowerCase();
