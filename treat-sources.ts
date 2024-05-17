@@ -258,7 +258,7 @@ const main = async () => {
   }, (cas) => [cas]);
 
   // Autoclassified
-  await treatDirtyCSV('./sources/afdm.csv', 1, 4, ['Name', 'CAS'], (name, newCas) => {
+  await treatDirtyCSV('./sources/ifra-iofi-lm.csv', 1, 4, ['Name', 'CAS'], (name, newCas) => {
     return [name, newCas];
   }, (cas) => [cas]);
   

@@ -211,7 +211,7 @@ const main = async () => {
   });
 
   // Autoclassified
-  await processFile('./treated/afdm-treated.csv', (record) => {
+  await processFile('./treated/ifra-iofi-lm-treated.csv', (record) => {
     const cas = new CAS(record[1]);
     const iterator = allMatters.values();
     while (true) {
